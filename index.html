@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-out">
+<meta name="apple-mobile-web-app-title" content="Ride Fuel">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<title>Ride Fuel — Nicholson Trail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;500;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --accent: #e8a020;
+    --accent-dim: #7a5210;
+    --green: #3ddc84;
+    --red: #ff4444;
+    --text: #f0ece4;
+    --muted: #888;
+    --gel: #e8a020;
+    --bar: #5b9bd5;
+    --meal: #3ddc84;
+    --nuts: #b87333;
+    --start: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── STANDBY SCREEN ── */
+  #screen-standby {
+    justify-content: space-between;
+    padding: 0;
+  }
+
+  .standby-header {
+    padding: 28px 24px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+
+  .ride-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .ride-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 1px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .ride-date {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .clock-block {
+    text-align: center;
+    padding: 20px 24px;
+  }
+
+  #clock {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 300;
+    font-size: 72px;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  #clock-date {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .next-block {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+
+  .next-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .next-time {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .next-food {
+    font-size: 15px;
+    color: var(--text);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  .next-drink {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── CUE LIST ── */
+  .cue-list-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 80px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cue-list-header {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 24px 8px;
+  }
+
+  .cue-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    border-bottom: 1px solid #1a1a1a;
+    gap: 12px;
+    transition: background 0.15s;
+  }
+
+  .cue-row.past { opacity: 0.3; }
+  .cue-row.current { background: #1e1a0f; }
+  .cue-row.upcoming { }
+
+  .cue-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .type-gel .cue-dot { background: var(--gel); }
+  .type-bar .cue-dot { background: var(--bar); }
+  .type-meal .cue-dot { background: var(--meal); }
+  .type-nuts .cue-dot { background: var(--nuts); }
+  .type-start .cue-dot { background: var(--start); }
+
+  .cue-time-col {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--muted);
+    width: 58px;
+    flex-shrink: 0;
+  }
+  .cue-row.current .cue-time-col { color: var(--accent); }
+
+  .cue-food-col { flex: 1; }
+  .cue-food-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .cue-drink-name {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  /* ── BOTTOM START BUTTON ── */
+  .start-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 24px 24px;
+    background: linear-gradient(transparent, var(--bg) 40%);
+  }
+
+  #btn-start {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  #btn-start:active { transform: scale(0.98); background: #c88010; }
+  #btn-start.running { background: var(--red); color: #fff; }
+
+  /* ── ALARM SCREEN ── */
+  #screen-alarm {
+    justify-content: center;
+    align-items: center;
+    background: var(--bg);
+    padding: 32px 24px;
+    position: relative;
+  }
+
+  .alarm-pulse {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(232,160,32,0.12) 0%, transparent 70%);
+    animation: pulse-bg 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-bg {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .alarm-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .alarm-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .alarm-time-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 300;
+    font-size: 80px;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: -3px;
+    animation: slideDown 0.35s ease;
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .alarm-divider {
+    width: 40px;
+    height: 2px;
+    background: var(--accent);
+    margin: 20px auto;
+    animation: fadeIn 0.5s ease 0.1s both;
+  }
+
+  .alarm-section-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    animation: fadeIn 0.5s ease 0.15s both;
+  }
+
+  .alarm-food {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 48px;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 4px;
+    animation: fadeIn 0.5s ease 0.2s both;
+  }
+  .alarm-food.type-gel { color: var(--gel); }
+  .alarm-food.type-bar { color: var(--bar); }
+  .alarm-food.type-meal { color: var(--meal); }
+  .alarm-food.type-nuts { color: var(--nuts); }
+
+  .alarm-drink-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 16px 0 6px;
+    animation: fadeIn 0.5s ease 0.25s both;
+  }
+
+  .alarm-drink {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1.2;
+    animation: fadeIn 0.5s ease 0.3s both;
+  }
+
+  .alarm-cue-count {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 20px;
+    animation: fadeIn 0.5s ease 0.35s both;
+  }
+
+  #btn-dismiss {
+    margin-top: 32px;
+    width: 100%;
+    padding: 18px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    animation: fadeIn 0.5s ease 0.4s both;
+  }
+  #btn-dismiss:active { background: #1a1a1a; }
+
+  .next-up-line {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+    animation: fadeIn 0.5s ease 0.45s both;
+  }
+
+  /* ── DONE SCREEN ── */
+  #screen-done {
+    justify-content: center;
+    align-items: center;
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .done-icon {
+    font-size: 64px;
+    margin-bottom: 24px;
+  }
+
+  .done-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 48px;
+    color: var(--green);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .done-sub {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  #btn-reset {
+    margin-top: 40px;
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  /* ── SCROLLBAR ── */
+  .cue-list-wrap::-webkit-scrollbar { width: 3px; }
+  .cue-list-wrap::-webkit-scrollbar-track { background: transparent; }
+  .cue-list-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Wake lock indicator */
+  .wake-status {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px;
+    letter-spacing: 1px;
+  }
+  .wake-status.ok { color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- STANDBY SCREEN -->
+<div id="screen-standby" class="screen active">
+  <div class="standby-header">
+    <div class="ride-title">Nicholson Trail · Deadwood → Edgemont</div>
+    <div class="ride-name">RIDE FUEL</div>
+    <div class="ride-date">June 24, 2026 · ~110 miles · Fat bike</div>
+  </div>
+
+  <div class="clock-block">
+    <div id="clock">00:00</div>
+    <div id="clock-date">--</div>
+  </div>
+
+  <div class="next-block">
+    <div class="next-label">Next cue</div>
+    <div class="next-time" id="next-time">—</div>
+    <div class="next-food" id="next-food">Press START to begin</div>
+    <div class="next-drink" id="next-drink"></div>
+  </div>
+
+  <div class="cue-list-wrap">
+    <div class="cue-list-header">All 33 cues · 04:45 AM – 08:45 PM</div>
+    <div id="cue-list"></div>
+  </div>
+
+  <div class="wake-status" id="wake-status">screen lock: unknown</div>
+
+  <div class="start-bar">
+    <button id="btn-start">Start Ride</button>
+  </div>
+</div>
+
+<!-- ALARM SCREEN -->
+<div id="screen-alarm" class="screen">
+  <div class="alarm-pulse"></div>
+  <div class="alarm-content">
+    <div class="alarm-label">FUEL UP</div>
+    <div class="alarm-time-display" id="alarm-time">--:--</div>
+    <div class="alarm-divider"></div>
+    <div class="alarm-section-label">EAT</div>
+    <div class="alarm-food" id="alarm-food">—</div>
+    <div class="alarm-drink-label">DRINK</div>
+    <div class="alarm-drink" id="alarm-drink">—</div>
+    <div class="alarm-cue-count" id="alarm-count"></div>
+    <button id="btn-dismiss">Got It — Dismiss</button>
+    <div class="next-up-line" id="next-up-line"></div>
+  </div>
+</div>
+
+<!-- DONE SCREEN -->
+<div id="screen-done" class="screen">
+  <div class="done-icon">🏁</div>
+  <div class="done-title">Ride Complete</div>
+  <div class="done-sub">All cues delivered.<br>Nice work out there.</div>
+  <button id="btn-reset">Reset</button>
+</div>
+
+<script>
+const CUES = [
+  {time:"04:45",food:"Start — sip water + electrolytes",drink:"Sip steadily 16–24 oz/hr",type:"start"},
+  {time:"05:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"05:45",food:"½ Atlas bar",drink:"Water",type:"bar"},
+  {time:"06:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"06:45",food:"½ Atlas bar",drink:"Water",type:"bar"},
+  {time:"07:15",food:"Nuts + dried fruit",drink:"Water + 1 Sky MD",type:"nuts"},
+  {time:"07:45",food:"PF30 gel",drink:"Water",type:"gel"},
+  {time:"08:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"08:45",food:"PF30 gel",drink:"Water",type:"gel"},
+  {time:"09:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"09:45",food:"PBJ + banana",drink:"Water",type:"meal"},
+  {time:"10:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"10:45",food:"½ Atlas bar",drink:"Water",type:"bar"},
+  {time:"11:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"11:45",food:"Nuts + dried fruit",drink:"Water",type:"nuts"},
+  {time:"12:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"12:45",food:"PF30 gel",drink:"Water",type:"gel"},
+  {time:"13:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"13:45",food:"PBJ + banana",drink:"Water",type:"meal"},
+  {time:"14:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"14:45",food:"½ Atlas bar",drink:"Water",type:"bar"},
+  {time:"15:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"15:45",food:"Nuts + dried fruit",drink:"Water",type:"nuts"},
+  {time:"16:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"16:45",food:"PF30 gel",drink:"Water",type:"gel"},
+  {time:"17:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"17:45",food:"½ Atlas bar",drink:"Water",type:"bar"},
+  {time:"18:15",food:"PF30 gel",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"18:45",food:"Nuts + dried fruit",drink:"Water",type:"nuts"},
+  {time:"19:15",food:"½ Atlas bar",drink:"Water + 1 Sky MD",type:"bar"},
+  {time:"19:45",food:"PF90 gel (⅓ pack)",drink:"Water + 1 Sky MD",type:"gel"},
+  {time:"20:15",food:"½ Atlas bar",drink:"Water",type:"bar"},
+  {time:"20:45",food:"PF90 gel (⅓ pack)",drink:"Water + 1 Sky MD",type:"gel"}
+];
+
+// Parse "HH:MM" into today's Date object (or June 24 2026 if on ride day)
+function cueToDate(timeStr) {
+  const now = new Date();
+  const [h, m] = timeStr.split(':').map(Number);
+  // On ride day use June 24 2026, otherwise use today for testing
+  const isRideDay = (now.getFullYear() === 2026 && now.getMonth() === 5 && now.getDate() === 24);
+  const base = isRideDay ? new Date(2026, 5, 24) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  base.setHours(h, m, 0, 0);
+  return base;
+}
+
+// Audio: generate a tone using Web Audio API
+let audioCtx = null;
+function playAlarm() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx;
+    // Three-beep pattern
+    [0, 0.35, 0.7].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime + offset);
+      gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + offset + 0.02);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + offset + 0.25);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.3);
+    });
+  } catch(e) { console.warn('Audio failed:', e); }
+}
+
+// Wake Lock
+let wakeLock = null;
+async function requestWakeLock() {
+  const el = document.getElementById('wake-status');
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      el.textContent = '● screen lock: prevented';
+      el.className = 'wake-status ok';
+      wakeLock.addEventListener('release', () => {
+        el.textContent = '○ screen lock: released — tap start again';
+        el.className = 'wake-status';
+      });
+    } else {
+      el.textContent = '○ wake lock not supported — keep screen on manually';
+    }
+  } catch(e) {
+    el.textContent = '○ wake lock denied';
+  }
+}
+
+// Re-acquire wake lock when page becomes visible again
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock !== null && document.visibilityState === 'visible' && running) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch(e) {}
+  }
+});
+
+// State
+let running = false;
+let tickInterval = null;
+let firedCues = new Set();
+let currentAlarmIndex = null;
+
+function formatTime(date) {
+  let h = date.getHours();
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function formatCueTime(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+// Build cue list
+function buildCueList() {
+  const container = document.getElementById('cue-list');
+  container.innerHTML = '';
+  CUES.forEach((cue, i) => {
+    const row = document.createElement('div');
+    row.className = `cue-row type-${cue.type}`;
+    row.id = `cue-row-${i}`;
+    row.innerHTML = `
+      <div class="cue-dot"></div>
+      <div class="cue-time-col">${formatCueTime(cue.time)}</div>
+      <div class="cue-food-col">
+        <div class="cue-food-name">${cue.food}</div>
+        <div class="cue-drink-name">${cue.drink}</div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function updateCueList(now) {
+  CUES.forEach((cue, i) => {
+    const row = document.getElementById(`cue-row-${i}`);
+    if (!row) return;
+    const cueDate = cueToDate(cue.time);
+    row.classList.remove('past', 'current', 'upcoming');
+    if (firedCues.has(i)) {
+      row.classList.add('past');
+    } else if (cueDate <= now && cueDate.getTime() > now.getTime() - 29 * 60 * 1000) {
+      row.classList.add('current');
+    } else {
+      row.classList.add('upcoming');
+    }
+  });
+}
+
+function updateNextCue(now) {
+  const next = CUES.find((cue, i) => !firedCues.has(i) && cueToDate(cue.time) > now);
+  if (next) {
+    document.getElementById('next-time').textContent = formatCueTime(next.time);
+    document.getElementById('next-food').textContent = next.food;
+    document.getElementById('next-drink').textContent = next.drink;
+  } else {
+    document.getElementById('next-time').textContent = '—';
+    document.getElementById('next-food').textContent = 'All cues complete';
+    document.getElementById('next-drink').textContent = '';
+  }
+}
+
+function showAlarm(index) {
+  const cue = CUES[index];
+  currentAlarmIndex = index;
+
+  document.getElementById('alarm-time').textContent = formatCueTime(cue.time);
+  const foodEl = document.getElementById('alarm-food');
+  foodEl.textContent = cue.food;
+  foodEl.className = `alarm-food type-${cue.type}`;
+  document.getElementById('alarm-drink').textContent = cue.drink;
+  document.getElementById('alarm-count').textContent = `Cue ${index + 1} of ${CUES.length}`;
+
+  const next = CUES[index + 1];
+  document.getElementById('next-up-line').textContent = next
+    ? `Next: ${formatCueTime(next.time)} — ${next.food}`
+    : 'Last cue — finish strong';
+
+  showScreen('alarm');
+  playAlarm();
+
+  // Vibrate if supported
+  if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+function tick() {
+  const now = new Date();
+
+  // Update clock
+  document.getElementById('clock').textContent = formatTime(now);
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('clock-date').textContent =
+    `${days[now.getDay()]} · ${months[now.getMonth()]} ${now.getDate()}`;
+
+  // Check for cues to fire (within a 60-second window of their scheduled time)
+  CUES.forEach((cue, i) => {
+    if (firedCues.has(i)) return;
+    const cueDate = cueToDate(cue.time);
+    const diff = now.getTime() - cueDate.getTime();
+    if (diff >= 0 && diff < 60000) {
+      firedCues.add(i);
+      showAlarm(i);
+    }
+  });
+
+  updateNextCue(now);
+  updateCueList(now);
+
+  // Check if all cues fired
+  if (firedCues.size === CUES.length) {
+    clearInterval(tickInterval);
+    running = false;
+    setTimeout(() => showScreen('done'), 30000); // show done after 30s
+  }
+}
+
+// Init clock without running
+function initClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = formatTime(now);
+  updateNextCue(now);
+  updateCueList(now);
+}
+
+document.getElementById('btn-start').addEventListener('click', async () => {
+  // Unlock audio context on user gesture
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+  if (!running) {
+    running = true;
+    document.getElementById('btn-start').textContent = 'Stop Ride';
+    document.getElementById('btn-start').classList.add('running');
+    await requestWakeLock();
+    tick();
+    tickInterval = setInterval(tick, 10000); // check every 10 seconds
+  } else {
+    running = false;
+    clearInterval(tickInterval);
+    document.getElementById('btn-start').textContent = 'Start Ride';
+    document.getElementById('btn-start').classList.remove('running');
+    if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  }
+});
+
+document.getElementById('btn-dismiss').addEventListener('click', () => {
+  showScreen('standby');
+  currentAlarmIndex = null;
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  firedCues.clear();
+  running = false;
+  clearInterval(tickInterval);
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  document.getElementById('btn-start').textContent = 'Start Ride';
+  document.getElementById('btn-start').classList.remove('running');
+  buildCueList();
+  initClock();
+  showScreen('standby');
+});
+
+// Init
+buildCueList();
+initClock();
+setInterval(initClock, 30000); // keep clock ticking before start
+
+// Register service worker for offline
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW reg failed:', e));
+}
+</script>
+</body>
+</html>
