@@ -462,6 +462,7 @@
 
   <div class="start-bar">
     <button id="btn-start">Start Ride</button>
+    <button id="btn-test" style="width:100%;margin-top:8px;padding:12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;">Test Alarm</button>
   </div>
 </div>
 
@@ -748,6 +749,13 @@ document.getElementById('btn-start').addEventListener('click', async () => {
     document.getElementById('btn-start').classList.remove('running');
     if (wakeLock) { wakeLock.release(); wakeLock = null; }
   }
+});
+
+document.getElementById('btn-test').addEventListener('click', async () => {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  // Show a real cue card — use cue #1 (first mid-ride gel)
+  showAlarm(1);
 });
 
 document.getElementById('btn-dismiss').addEventListener('click', () => {
